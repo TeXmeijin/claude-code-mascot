@@ -66,20 +66,53 @@ Relevant file:
 
 - [`src/lib/renderer.ts`](src/lib/renderer.ts)
 
+### 4. Hierarchical configuration
+
+Configuration is resolved in priority order: environment variables → project config (`.claude/mascot.json`) → user config (`~/.claude/plugins/claude-code-mascot/config.json`) → defaults.
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `pack` | string | `"pixel-buddy"` | Active pack name |
+| `color` | `"auto"` \| `"always"` \| `"never"` | `"auto"` | Color output mode |
+| `twoLine` | boolean | `true` | Two-line layout |
+| `renderProfile` | `"auto"` \| `"claude-code-safe"` | `"claude-code-safe"` | Render profile |
+| `safeBackground` | hex color | `"#333333"` | Background for safe mode |
+
+Environment variable overrides: `CLAUDE_MASCOT_PACK`, `CLAUDE_MASCOT_COLOR`, `CLAUDE_MASCOT_TWO_LINE`, `CLAUDE_MASCOT_RENDER_PROFILE`, `CLAUDE_MASCOT_SAFE_BACKGROUND`, `CLAUDE_MASCOT_HOME`, `CLAUDE_MASCOT_WIDTH_HINT`, `CLAUDE_MASCOT_FORCE_COLOR`, `CLAUDE_MASCOT_DEBUG`.
+
+Relevant file:
+
+- [`src/lib/config.ts`](src/lib/config.ts)
+- [`src/lib/constants.ts`](src/lib/constants.ts)
+
+### 5. API usage display
+
+The status line shows 5-hour and 7-day API usage percentages with reset countdown. Usage data is fetched from `https://api.anthropic.com/api/oauth/usage` using an OAuth token from macOS Keychain or `.credentials.json`. Results are cached with a 6-minute TTL.
+
+Relevant file:
+
+- [`src/lib/usage.ts`](src/lib/usage.ts)
+
 ## Claude Code Integration Notes
 
 ### Plugin metadata is not enough
 
 Claude Code plugin metadata does not automatically activate `statusLine`. The user must still have `statusLine` configured in `~/.claude/settings.json`.
 
-This repo therefore includes:
+This repo includes:
 
-- A plugin manifest for installation metadata
+- A plugin manifest for installation metadata (`.claude-plugin/plugin.json`)
+- A marketplace manifest (`.claude-plugin/marketplace.json`)
 - A setup helper that merges both `statusLine` and mascot hooks into user settings
+- A slash command (`commands/setup.md`) for `/claude-mascot:setup`
+
+The `dist/` directory is committed to the repo so that marketplace plugin installations work without a build step.
 
 Relevant files:
 
 - [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json)
+- [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json)
+- [`commands/setup.md`](commands/setup.md)
 - [`src/cli/setup-helper.ts`](src/cli/setup-helper.ts)
 
 ### Hooks must be merged, not replaced
@@ -102,17 +135,20 @@ The setup helper appends mascot command hooks for:
 
 If the mascot hook is already present for an event, it is not duplicated.
 
-### 4. Status line summary
+The setup helper accepts `--write` (apply changes) and `--plugin-root` (explicit plugin location). The `--force` flag was removed — existing `statusLine` is now replaced automatically.
+
+### 6. Status line summary
 
 `summarizeState()` in `renderer.ts` builds the text line below/beside the sprite.
 
-Format: `<state> | ⎇ <branch> | <model> | tools:N | ctx:N% | 5h:N%(Xm) | 7w:N%(Xh)`
+Format: `<state> | <project-dir> | ⎇ <branch> | <model> | tools:N | fail:N | sub:N | ctx:N% | 5h:N%(Xm) | 7w:N%(Xh)`
 
+- **Project directory**: Basename of `project_dir`
 - **Git branch**: Derived at render time via `git rev-parse --abbrev-ref HEAD` on `project_dir`
 - **Model name**: From `input.model.display_name` (fallback: `input.model.id`)
 - **Usage text color**: 5h/7d text is colorized with the same heat interpolation (60→85% = gray→red)
 
-### 5. Heat palette
+### 7. Heat palette
 
 The cat sprite's fur color shifts toward red (`#ff4444`) as context window usage increases.
 
@@ -175,6 +211,9 @@ Useful manual checks:
 node dist/cli/preview-pack.js --pack pixel-buddy --state idle --frames 2 --color never
 node dist/cli/preview-pack.js --pack pixel-buddy --state thinking --frames 3 --color always
 node dist/cli/validate-pack.js packs/pixel-buddy
+node dist/cli/storybook.js --pack pixel-buddy --color always
+node dist/cli/statusline-lab.js
+node dist/cli/analyze-capture.js <png-file>
 ```
 
 ## Half-block レンダリングでスプライトを編集するときの注意
@@ -225,4 +264,8 @@ pixel-buddy の顔の主要構造:
 - [`src/lib/pack.ts`](src/lib/pack.ts)
 - [`src/lib/renderer.ts`](src/lib/renderer.ts)
 - [`src/lib/transcript.ts`](src/lib/transcript.ts)
+- [`src/lib/config.ts`](src/lib/config.ts)
+- [`src/lib/constants.ts`](src/lib/constants.ts)
+- [`src/lib/usage.ts`](src/lib/usage.ts)
 - [`src/cli/setup-helper.ts`](src/cli/setup-helper.ts)
+- [`commands/setup.md`](commands/setup.md)
