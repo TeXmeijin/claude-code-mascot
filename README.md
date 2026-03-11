@@ -24,6 +24,12 @@ For engineers who find themselves more and more consumed by their work — a sma
 - **Status summary**: git branch, model name, tool count, context %, and API usage
 - **Custom mascot packs**: create and share your own characters
 
+## How It Works
+
+The mascot detects session state through Claude Code's [hook system](https://docs.anthropic.com/en/docs/claude-code/hooks). Each hook event (tool start, tool success, permission request, etc.) updates the mascot's internal state, and the status line renders the corresponding expression.
+
+Because this is event-driven rather than continuous polling, the displayed state may not always reflect the exact real-time status of your session. For example, there can be brief delays or missed transitions depending on hook timing. Think of it as a companion that reacts to events — not a precise status monitor.
+
 ## Bring One Home
 
 ### Via Claude Code Plugin Marketplace (Recommended)
