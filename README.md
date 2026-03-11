@@ -152,6 +152,12 @@ pnpm test
 pnpm typecheck
 ```
 
+## Contributing
+
+- **Bug fixes**: If you find a clear bug, please open a pull request.
+- **Custom mascots for yourself**: Create a custom pack locally — no need to upstream it.
+- **New mascot packs for everyone**: If you've made something great, open a PR to add it as an additional built-in pack. We'd love to see it!
+
 ## Uninstall
 
 1. Remove or replace the `statusLine` entry in `~/.claude/settings.json`
