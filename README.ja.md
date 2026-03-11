@@ -74,13 +74,13 @@ node dist/cli/setup-helper.js --write
 4. パックを検証:
 
 ```bash
-claude-mascot-validate-pack ~/.claude/plugins/claude-code-mascot/packs/パック名
+node dist/cli/validate-pack.js ~/.claude/plugins/claude-code-mascot/packs/パック名
 ```
 
 5. プレビュー:
 
 ```bash
-claude-mascot-storybook --pack パック名
+node dist/cli/storybook.js --pack パック名
 ```
 
 パック仕様の詳細は [docs/pack-spec.md](docs/pack-spec.md) を参照してください。
@@ -118,21 +118,27 @@ claude-mascot-storybook --pack パック名
 
 ## CLIツール
 
+プラグインのルートディレクトリから実行してください:
+
 ```bash
-# 全状態のストーリーブック形式ギャラリー
-claude-mascot-storybook --pack pixel-buddy
+# 全状態をストーリーブック形式で一覧表示
+node dist/cli/storybook.js --pack pixel-buddy
 
 # 特定の状態をプレビュー
-claude-mascot-preview-pack --pack pixel-buddy --state thinking --frames 3 --color always
+node dist/cli/preview-pack.js --pack pixel-buddy --state thinking --frames 3 --color always
 
-# パックを検証
-claude-mascot-validate-pack ./packs/pixel-buddy
+# パックファイルを検証
+node dist/cli/validate-pack.js ./packs/pixel-buddy
 
-# レンダープロファイルを比較
-claude-mascot-statusline-lab --pack pixel-buddy --profiles auto,claude-code-safe
+# レンダープロファイルを並べて比較
+node dist/cli/statusline-lab.js --pack pixel-buddy --profiles auto,claude-code-safe
 
-# ステータスラインを手動レンダリング
-printf '{"session_id":"demo","workspace":{"project_dir":"%s","current_dir":"%s"}}' "$PWD" "$PWD" | claude-mascot-statusline
+# ステータスラインを手動レンダリング（JSONをstdinに流す）
+printf '{"session_id":"demo","workspace":{"project_dir":"%s","current_dir":"%s"}}' "$PWD" "$PWD" \
+  | node dist/cli/render-status-line.js
+
+# セットアップ（statusLineとフックをsettings.jsonに書き込む）
+node dist/cli/setup-helper.js --write
 ```
 
 ## 開発

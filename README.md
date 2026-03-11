@@ -74,13 +74,13 @@ The mascot is fully swappable. You can create your own character pack and use it
 4. Validate your pack:
 
 ```bash
-claude-mascot-validate-pack ~/.claude-mascot/packs/your-pack-name
+node dist/cli/validate-pack.js ~/.claude/plugins/claude-code-mascot/packs/your-pack-name
 ```
 
 5. Preview it:
 
 ```bash
-claude-mascot-storybook --pack your-pack-name
+node dist/cli/storybook.js --pack your-pack-name
 ```
 
 See [docs/pack-spec.md](docs/pack-spec.md) for the full pack specification.
@@ -118,21 +118,27 @@ See [docs/pack-spec.md](docs/pack-spec.md) for the full pack specification.
 
 ## CLI Tools
 
+Run from the plugin root directory (`cd` into your clone or install path):
+
 ```bash
-# Storybook-style gallery of all states
-claude-mascot-storybook --pack pixel-buddy
+# View all states in a storybook-style gallery
+node dist/cli/storybook.js --pack pixel-buddy
 
 # Preview a specific state
-claude-mascot-preview-pack --pack pixel-buddy --state thinking --frames 3 --color always
+node dist/cli/preview-pack.js --pack pixel-buddy --state thinking --frames 3 --color always
 
-# Validate a pack
-claude-mascot-validate-pack ./packs/pixel-buddy
+# Validate a pack file
+node dist/cli/validate-pack.js ./packs/pixel-buddy
 
-# Compare render profiles
-claude-mascot-statusline-lab --pack pixel-buddy --profiles auto,claude-code-safe
+# Compare render profiles side by side
+node dist/cli/statusline-lab.js --pack pixel-buddy --profiles auto,claude-code-safe
 
-# Render status line manually
-printf '{"session_id":"demo","workspace":{"project_dir":"%s","current_dir":"%s"}}' "$PWD" "$PWD" | claude-mascot-statusline
+# Render status line manually (pipe JSON to stdin)
+printf '{"session_id":"demo","workspace":{"project_dir":"%s","current_dir":"%s"}}' "$PWD" "$PWD" \
+  | node dist/cli/render-status-line.js
+
+# Run setup to write statusLine and hooks into settings.json
+node dist/cli/setup-helper.js --write
 ```
 
 ## Development
