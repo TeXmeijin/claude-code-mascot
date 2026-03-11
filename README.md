@@ -159,7 +159,7 @@ pnpm typecheck
 - **Custom mascots for yourself**: Create a custom pack locally — no need to upstream it.
 - **New mascot packs for everyone**: If you've made something great, open a PR to add it as an additional built-in pack. We'd love to see it!
 
-## Uninstall
+## Good Bye
 
 1. Remove or replace the `statusLine` entry in `~/.claude/settings.json`
 2. Remove the mascot hook entries from `~/.claude/settings.json`
