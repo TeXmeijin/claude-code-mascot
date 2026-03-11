@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 
+import { getClaudeConfigDir } from "../lib/constants.js";
 import { shellQuote } from "../lib/terminal.js";
 
 interface SettingsShape {
@@ -27,7 +27,7 @@ async function main(): Promise<void> {
   const settingsPath = path.resolve(
     settingsFlagIndex > -1
       ? process.argv[settingsFlagIndex + 1]
-      : path.join(os.homedir(), ".claude", "settings.json")
+      : path.join(getClaudeConfigDir(), "settings.json")
   );
   const command = `node ${shellQuote(path.join(pluginRoot, "dist/cli/render-status-line.js"))}`;
   const hookCommand = `node ${shellQuote(path.join(pluginRoot, "dist/cli/hook-state-writer.js"))}`;

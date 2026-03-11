@@ -1,0 +1,13 @@
+{
+  "name": "claude-code-mascot",
+  "owner": {
+    "name": "TeXmeijin"
+  },
+  "plugins": [
+    {
+      "name": "claude-code-mascot",
+      "source": ".",
+      "description": "Pixel-art mascot for Claude Code status lines"
+    }
+  ]
+}

@@ -1,10 +1,13 @@
 import os from "node:os";
 import path from "node:path";
 
-export const APP_DIR_NAME = ".claude-mascot";
+export function getClaudeConfigDir(): string {
+  return process.env.CLAUDE_CONFIG_DIR ?? path.join(os.homedir(), ".claude");
+}
+
 export const APP_HOME = process.env.CLAUDE_MASCOT_HOME
   ? path.resolve(process.env.CLAUDE_MASCOT_HOME)
-  : path.join(os.homedir(), APP_DIR_NAME);
+  : path.join(getClaudeConfigDir(), "plugins", "claude-code-mascot");
 export const STATE_DIR = path.join(APP_HOME, "state");
 export const USER_PACKS_DIR = path.join(APP_HOME, "packs");
 export const USER_CONFIG_PATH = path.join(APP_HOME, "config.json");

@@ -47,14 +47,14 @@ The mascot is fully swappable. You can create your own character pack and use it
 ### Pack search order
 
 1. **Project-local**: `<project>/.claude/mascot-packs/<pack-name>/`
-2. **User-global**: `~/.claude-mascot/packs/<pack-name>/`
+2. **User-global**: `~/.claude/plugins/claude-code-mascot/packs/<pack-name>/`
 3. **Bundled**: `packs/<pack-name>/` (ships with the plugin)
 
 ### Creating a custom pack
 
 1. Copy `examples/external-pack/pack.yaml` as a starting point
 2. Place your pack in `~/.claude-mascot/packs/<your-pack-name>/pack.json` (or `pack.yaml`)
-3. Set the pack name in `~/.claude-mascot/config.json`:
+3. Set the pack name in `~/.claude/plugins/claude-code-mascot/config.json`:
 
 ```json
 {
@@ -80,7 +80,7 @@ See [docs/pack-spec.md](docs/pack-spec.md) for the full pack specification.
 
 ### Config files
 
-- **User config**: `~/.claude-mascot/config.json`
+- **User config**: `~/.claude/plugins/claude-code-mascot/config.json`
 - **Project config**: `.claude/mascot.json` (overrides user config)
 
 ```json
@@ -141,7 +141,7 @@ pnpm typecheck
 
 1. Remove or replace the `statusLine` entry in `~/.claude/settings.json`
 2. Remove the mascot hook entries from `~/.claude/settings.json`
-3. Optionally remove `~/.claude-mascot/` to clear cached state and user packs
+3. Optionally remove `~/.claude/plugins/claude-code-mascot/` to clear cached state and user packs
 
 ## License
 

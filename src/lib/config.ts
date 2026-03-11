@@ -33,7 +33,7 @@ export async function loadMascotConfig(projectDir?: string): Promise<MascotConfi
       normalizeHexColor(process.env.CLAUDE_MASCOT_SAFE_BACKGROUND) ??
       normalizeHexColor(projectConfig?.safeBackground) ??
       normalizeHexColor(userConfig?.safeBackground) ??
-      "#000000"
+      "#333333"
   };
 }
 

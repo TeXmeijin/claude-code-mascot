@@ -47,14 +47,14 @@ node dist/cli/setup-helper.js --write
 ### パック検索順序
 
 1. **プロジェクトローカル**: `<project>/.claude/mascot-packs/<pack-name>/`
-2. **ユーザーグローバル**: `~/.claude-mascot/packs/<pack-name>/`
+2. **ユーザーグローバル**: `~/.claude/plugins/claude-code-mascot/packs/<pack-name>/`
 3. **バンドル**: `packs/<pack-name>/`（プラグイン同梱）
 
 ### カスタムパックの作成手順
 
 1. `examples/external-pack/pack.yaml` をテンプレートとしてコピー
-2. `~/.claude-mascot/packs/<パック名>/pack.json`（または `pack.yaml`）として配置
-3. `~/.claude-mascot/config.json` でパック名を設定:
+2. `~/.claude/plugins/claude-code-mascot/packs/<パック名>/pack.json`（または `pack.yaml`）として配置
+3. `~/.claude/plugins/claude-code-mascot/config.json` でパック名を設定:
 
 ```json
 {
@@ -65,7 +65,7 @@ node dist/cli/setup-helper.js --write
 4. パックを検証:
 
 ```bash
-claude-mascot-validate-pack ~/.claude-mascot/packs/パック名
+claude-mascot-validate-pack ~/.claude/plugins/claude-code-mascot/packs/パック名
 ```
 
 5. プレビュー:
@@ -80,7 +80,7 @@ claude-mascot-storybook --pack パック名
 
 ### 設定ファイル
 
-- **ユーザー設定**: `~/.claude-mascot/config.json`
+- **ユーザー設定**: `~/.claude/plugins/claude-code-mascot/config.json`
 - **プロジェクト設定**: `.claude/mascot.json`（ユーザー設定を上書き）
 
 ```json
@@ -141,7 +141,7 @@ pnpm typecheck
 
 1. `~/.claude/settings.json` から `statusLine` エントリを削除または置換
 2. `~/.claude/settings.json` からマスコットフックエントリを削除
-3. 必要に応じて `~/.claude-mascot/` を削除（キャッシュされた状態とユーザーパックのクリア）
+3. 必要に応じて `~/.claude/plugins/claude-code-mascot/` を削除（キャッシュされた状態とユーザーパックのクリア）
 
 ## ライセンス
 

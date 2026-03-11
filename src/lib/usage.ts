@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { APP_HOME, USAGE_CACHE_TTL_MS, USAGE_FETCH_TIMEOUT_MS } from "./constants.js";
+import { APP_HOME, getClaudeConfigDir, USAGE_CACHE_TTL_MS, USAGE_FETCH_TIMEOUT_MS } from "./constants.js";
 import { readJsonIfExists, writeJsonAtomic } from "./fs.js";
 import type { UsageCacheEntry, UsageData } from "./types.js";
 
@@ -12,22 +12,8 @@ const USAGE_API_URL = "https://api.anthropic.com/api/oauth/usage";
 const LOCK_COOLDOWN_MS = 30_000;
 const RATE_LIMIT_BACKOFF_MS = 5 * 60 * 1000;
 
-function getClaudeConfigDir(): string {
-  return process.env.CLAUDE_CONFIG_DIR ?? path.join(os.homedir(), ".claude");
-}
-
-function getConfigSuffix(): string | null {
-  const configDir = getClaudeConfigDir();
-  const defaultDir = path.join(os.homedir(), ".claude");
-  if (configDir === defaultDir) {
-    return null;
-  }
-  return crypto.createHash("sha256").update(configDir).digest("hex").slice(0, 8);
-}
-
 function getUsageCachePath(): string {
-  const suffix = getConfigSuffix();
-  return path.join(APP_HOME, suffix ? `usage-cache-${suffix}.json` : "usage-cache.json");
+  return path.join(APP_HOME, "usage-cache.json");
 }
 
 function getUsageLockPath(): string {
@@ -35,8 +21,13 @@ function getUsageLockPath(): string {
 }
 
 function getKeychainServiceName(): string {
-  const suffix = getConfigSuffix();
-  return suffix ? `Claude Code-credentials-${suffix}` : "Claude Code-credentials";
+  const configDir = getClaudeConfigDir();
+  const defaultDir = path.join(os.homedir(), ".claude");
+  if (configDir === defaultDir) {
+    return "Claude Code-credentials";
+  }
+  const suffix = crypto.createHash("sha256").update(configDir).digest("hex").slice(0, 8);
+  return `Claude Code-credentials-${suffix}`;
 }
 
 async function getOAuthTokenFromKeychain(): Promise<string | undefined> {
