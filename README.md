@@ -42,7 +42,7 @@ Because this is event-driven rather than continuous polling, the displayed state
 Then run the setup skill to configure your status line and hooks:
 
 ```
-/claude-mascot:setup
+/claude-code-mascot-statusline:setup
 ```
 
 ### Manual Install
