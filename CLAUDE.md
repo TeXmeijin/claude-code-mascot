@@ -77,6 +77,7 @@ Configuration is resolved in priority order: environment variables → project c
 | `twoLine` | boolean | `true` | Two-line layout |
 | `renderProfile` | `"auto"` \| `"claude-code-safe"` | `"claude-code-safe"` | Render profile |
 | `safeBackground` | hex color | `"#333333"` | Background for safe mode |
+| `summaryItems` | string[] | (all) | Summary items to display (see §9) |
 
 Environment variable overrides: `CLAUDE_MASCOT_PACK`, `CLAUDE_MASCOT_COLOR`, `CLAUDE_MASCOT_TWO_LINE`, `CLAUDE_MASCOT_RENDER_PROFILE`, `CLAUDE_MASCOT_SAFE_BACKGROUND`, `CLAUDE_MASCOT_HOME`, `CLAUDE_MASCOT_WIDTH_HINT`, `CLAUDE_MASCOT_FORCE_COLOR`, `CLAUDE_MASCOT_DEBUG`.
 
@@ -159,6 +160,101 @@ The cat sprite's fur color shifts toward red (`#ff4444`) as context window usage
 
 Constants in `renderer.ts`: `HEAT_THRESHOLD`, `HEAT_MAX`, `HEAT_TARGET`, `HEAT_PALETTE_INDEX`
 
+### 8. Summary line width guard (cli-truncate対策)
+
+Claude Code内部のstatusLine描画には、**サマリー行の幅がstatusLineコンテナの利用可能幅を超えると、スプライト行ごと切り詰められる**という仕様がある。これはClaude Code側の構造的な問題であり、プラグイン側で対策している。
+
+#### 背景: Claude Code内部の描画仕様（2026-03-15時点、v2.1.76のバンドルバイナリ解析による）
+
+statusLineの出力は以下のInkコンポーネントで描画される:
+
+```javascript
+// Claude Code cli.js (minified) より抜粋
+createElement(Text, { dimColor: true, wrap: "truncate" },
+  createElement(AnsiParser, null, statusLineText)
+)
+```
+
+`wrap: "truncate"` により、Ink内部の`cli-truncate`が呼ばれる。このライブラリは**複数行テキスト全体を1つの文字列として扱い**、利用可能幅の文字数で切り詰める。つまり、たった1行でも幅を超えると、その行より後ろの全行が消える。
+
+さらに、フッターのレイアウト構造:
+
+```javascript
+// Claude Code cli.js (minified) より抜粋
+Box({ flexDirection: columns < 80 ? 'column' : 'row', paddingX: 2 })
+  Box({ flexDirection: 'column', flexShrink: columns < 80 ? 0 : 1 })  // LEFT
+    StatusLine
+    InputHints
+  Box({ flexShrink: 1 })  // RIGHT
+    StatusIndicators
+    BridgeStatus
+```
+
+ターミナル幅80以上ではrow layout（左右分割）となり、statusLineの利用可能幅はターミナル幅の約半分になる。
+
+statusLineコマンドの出力は以下のように加工される:
+
+```javascript
+stdout.trim().split('\n').flatMap(z => z.trim() || []).join('\n')
+```
+
+各行がtrimされ、空行は除去される。
+
+#### 症状
+
+サマリー行（例: `waiting | claude-code-mascot-statusline | ⎇ main | Opus 4.6 (1M context) | ctx:13% | 5h:41%(52m) | 7w:14%`）が利用可能幅を超えると、cli-truncateがテキスト全体を切り詰め、**スプライトの上部（耳）だけが表示される**。ターミナルの横幅を広げると全身が表示され、狭くすると耳だけになる。
+
+#### 対策
+
+`renderer.ts`でサマリー行を動的に折り返す。`terminal.ts`の`getTerminalSize()`で親プロセスのTTYデバイス経由でターミナル幅を取得し、`cols - 10`を各行の最大幅として使う。サマリーの`|`区切りパーツを最大幅内で結合し、超えたら自動で次の行に折り返す。
+
+ターミナル幅の取得方法（`/dev/tty`はパイプ環境で使えないため、親プロセスのTTY名を`ps`で特定）:
+
+```javascript
+const tty = execSync('ps -o tty= -p $(ps -o ppid= -p $$)', { shell: '/bin/sh' }).trim();
+const size = execSync(`stty size < /dev/${tty}`, { shell: '/bin/sh' }).trim();
+const [rows, cols] = size.split(' ').map(Number);
+```
+
+この方式はccstatusline, claude-powerline等の他プラグインでも採用されている。
+
+#### 関連Claude Code issues
+
+- [#28750](https://github.com/anthropics/claude-code/issues/28750) — 複数行statusLineの2行目がナロー端末で消える（`wrap: "truncate"`が原因と特定）
+- [#27305](https://github.com/anthropics/claude-code/issues/27305) — 通知バナー表示中にstatusLineが圧縮される（`flexShrink`問題）
+- [#22115](https://github.com/anthropics/claude-code/issues/22115) — ターミナル幅がstatusLineコマンドに渡されない
+- [#31307](https://github.com/anthropics/claude-code/issues/31307) — 複数行statusLineでインタラクティブUIのカーソルオフセットがずれる
+
+#### 変更時の注意
+
+- サマリーに新しい項目を追加する場合、全項目を`|`で結合した1行の長さを意識すること。長いほどナロー端末で折り返し行数が増える
+- プロジェクトディレクトリ名は20文字で切り詰めている（`dirName.slice(0, 20) + '…'`）
+- `summaryItems`設定でユーザーが表示項目を絞れるようにしている
+
+Relevant files:
+
+- [`src/lib/renderer.ts`](src/lib/renderer.ts) — 折り返しロジック
+- [`src/lib/terminal.ts`](src/lib/terminal.ts) — `getTerminalSize()`
+
+### 9. Configurable summary items
+
+`summaryItems`設定で、ステータスラインのサマリーに表示する項目をユーザーが選択できる。
+
+利用可能なキー: `project`, `branch`, `model`, `tools`, `failures`, `subagents`, `context`, `usage5h`, `usage7d`
+
+未指定時は全項目表示。config.jsonに配列で指定:
+
+```json
+{ "summaryItems": ["project", "branch", "context", "usage5h"] }
+```
+
+Relevant files:
+
+- [`src/lib/types.ts`](src/lib/types.ts) — `SUMMARY_ITEM_KEYS`, `SummaryItemKey`
+- [`src/lib/config.ts`](src/lib/config.ts) — `normalizeSummaryItems()`
+- [`src/lib/renderer.ts`](src/lib/renderer.ts) — `show()` フィルタ
+- [`commands/setup.md`](commands/setup.md) — セットアップ時のカスタマイズステップ
+
 ## Common Failure Modes
 
 ### “The mascot is always waiting”
@@ -175,6 +271,17 @@ First checks:
 node dist/cli/setup-helper.js
 ls ~/.claude/plugins/claude-code-mascot-statusline/state
 ```
+
+### “The mascot only shows ears on narrow terminals”
+
+This is the cli-truncate issue described in §8. The summary line exceeds the statusLine container's available width, causing Ink to truncate the entire multi-line output.
+
+Checks:
+
+- Run `stty size < /dev/ttysXXX` (where XXX is the terminal's TTY) to see actual terminal dimensions
+- If cols < 128 in row layout, the statusLine gets approximately cols/2 width
+- Verify that the summary wrapping logic in `renderer.ts` is working (all output lines should be shorter than the available width)
+- If a specific summary item is too long, users can remove it via `summaryItems` config
 
 ### “The mascot looks like ASCII art”
 

@@ -172,6 +172,36 @@ pnpm typecheck
 - **New mascot packs for everyone**: If you've made something great, open a PR to add it as an additional built-in pack. We'd love to see it!
 - **Creating packs with Claude Code**: Use the `/create-mascot-pack` skill to scaffold and iterate on new packs interactively.
 
+## Technical Details: Narrow Terminal Support
+
+Claude Code's internal statusLine renderer uses Ink's `<Text wrap="truncate">`, which invokes `cli-truncate` on the entire multi-line output as a single string. When **any line** exceeds the statusLine container's available width, all subsequent lines are silently dropped — causing the mascot sprite to show only its top rows (typically just the ears).
+
+This is a known Claude Code behavior documented in several open issues:
+
+- [anthropics/claude-code#28750](https://github.com/anthropics/claude-code/issues/28750) — Multi-line statusline second line disappears on narrow terminals
+- [anthropics/claude-code#27305](https://github.com/anthropics/claude-code/issues/27305) — StatusLine compressed when notification banners are active (`flexShrink: 1`)
+- [anthropics/claude-code#22115](https://github.com/anthropics/claude-code/issues/22115) — Terminal columns not passed to statusLine commands
+
+The trigger is almost always the **summary text line** (state, project name, branch, model, usage stats joined with `|`), which can easily exceed 80 characters. The sprite lines themselves are only 16 characters wide in half-block mode.
+
+### How this plugin works around it
+
+1. **Dynamic terminal width detection** — Since statusLine commands run as piped child processes (`process.stdout.columns` is `undefined`), we detect the real terminal size by finding the parent process's TTY device via `ps` and querying it with `stty size`. Results are cached with a 5-second TTL to minimize overhead.
+
+2. **Automatic summary line wrapping** — The summary text is split at `|` separators and reassembled into multiple lines, each constrained to `terminal_cols - 10` characters. This ensures no line exceeds the container width, preventing `cli-truncate` from activating.
+
+3. **Configurable summary items** — Users can reduce the summary length by choosing which items to display via `summaryItems` in their config:
+
+   ```json
+   {
+     "summaryItems": ["project", "branch", "context", "usage5h"]
+   }
+   ```
+
+   Available keys: `project`, `branch`, `model`, `tools`, `failures`, `subagents`, `context`, `usage5h`, `usage7d`
+
+These techniques were developed by analyzing Claude Code v2.1.76's bundled binary (2026-03-15). The internal layout structure places the statusLine in a flex container with `flexShrink: 1`, and the footer switches between `row` layout (cols ≥ 80, statusLine gets ~half width) and `column` layout (cols < 80, full width). The parent-process TTY approach is also used by [ccstatusline](https://github.com/sirmalloc/ccstatusline) and [claude-powerline](https://github.com/Owloops/claude-powerline).
+
 ## Good Bye
 
 Run the uninstall command inside Claude Code:

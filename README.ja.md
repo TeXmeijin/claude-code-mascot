@@ -172,6 +172,36 @@ pnpm typecheck
 - **みんなのための新マスコット**: いいものができたら、追加の組み込みパックとしてプルリクエストを出してください！
 - **Claude Code でパック作成**: `/create-mascot-pack` スキルを使えば、対話的に新しいパックを作成・編集できます。
 
+## 技術詳細: ナローターミナル対応
+
+Claude Code内部のstatusLineレンダラーはInkの`<Text wrap="truncate">`を使用しており、内部で`cli-truncate`が複数行テキスト全体を1つの文字列として処理します。**いずれかの行**がstatusLineコンテナの利用可能幅を超えると、その行以降の全行が無言で削除され、マスコットスプライトの上部（典型的には耳だけ）しか表示されなくなります。
+
+これはClaude Code側の既知の挙動で、複数のオープンissueで報告されています:
+
+- [anthropics/claude-code#28750](https://github.com/anthropics/claude-code/issues/28750) — ナロー端末で複数行statusLineの2行目が消える
+- [anthropics/claude-code#27305](https://github.com/anthropics/claude-code/issues/27305) — 通知バナー表示時にstatusLineが圧縮される（`flexShrink: 1`）
+- [anthropics/claude-code#22115](https://github.com/anthropics/claude-code/issues/22115) — ターミナル幅がstatusLineコマンドに渡されない
+
+トリガーはほぼ常に**サマリーテキスト行**（ステート、プロジェクト名、ブランチ、モデル名、使用率を`|`で結合）で、80文字を超えやすいです。スプライト行自体はhalf-blockモードで16文字幅に収まっています。
+
+### プラグイン側の対策
+
+1. **動的ターミナル幅検出** — statusLineコマンドはパイプされた子プロセスとして実行されるため`process.stdout.columns`は`undefined`になります。そこで親プロセスのTTYデバイスを`ps`コマンドで特定し、`stty size`で実際のターミナルサイズを取得しています。結果は5秒TTLでキャッシュされます。
+
+2. **サマリー行の自動折り返し** — サマリーテキストを`|`区切りで分割し、各行が`terminal_cols - 10`文字以内に収まるように再構成します。これにより全行がコンテナ幅以内に収まり、`cli-truncate`の発動を防ぎます。
+
+3. **サマリー項目のカスタマイズ** — ユーザーはconfigの`summaryItems`で表示項目を選択できます:
+
+   ```json
+   {
+     "summaryItems": ["project", "branch", "context", "usage5h"]
+   }
+   ```
+
+   利用可能なキー: `project`, `branch`, `model`, `tools`, `failures`, `subagents`, `context`, `usage5h`, `usage7d`
+
+これらの対策はClaude Code v2.1.76のバンドルバイナリの解析（2026-03-15時点）に基づいています。内部レイアウトはstatusLineを`flexShrink: 1`のflexコンテナに配置し、フッターは幅80以上で`row`レイアウト（statusLineは約半分の幅）、80未満で`column`レイアウト（全幅）に切り替わります。親プロセスTTY方式は[ccstatusline](https://github.com/sirmalloc/ccstatusline)や[claude-powerline](https://github.com/Owloops/claude-powerline)でも採用されています。
+
 ## Good Bye
 
 Claude Code 内でアンインストールコマンドを実行してください:
